@@ -1,0 +1,129 @@
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+#app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevent overall page scroll */
+}
+
+#canvas-container {
+  flex-grow: 1; /* Canvas takes available space */
+  height: 100%;
+  position: relative; /* Needed for potential overlays */
+  background-color: #282c34;
+}
+
+.controllers-area {
+  display: flex;
+  flex-direction: column; /* Stack controllers vertically */
+  width: 300px; /* Fixed width for the controller area */
+  flex-shrink: 0; /* Prevent controller area from shrinking */
+  height: 100%; /* Take full height */
+  padding: 10px;
+  box-sizing: border-box; /* Include padding in width */
+  overflow-y: auto; /* Allow scrolling within the controller area */
+  border-left: 1px solid #ccc;
+  background-color: #f4f4f4;
+}
+
+.vrm-controller {
+  margin-bottom: 20px; /* Add space between controllers */
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: add some shadow */
+}
+
+.vrm-controller:last-child {
+  margin-bottom: 0; /* Remove margin from the last controller */
+}
+
+.vrm-controller h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  color: #333;
+}
+.vrm-controller h4 {
+  margin-top: 15px;
+  margin-bottom: 10px;
+  font-size: 1em;
+  color: #555;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.control-row label {
+  width: 100px; /* Adjust label width */
+  margin-right: 10px;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.control-row input[type='range'] {
+  flex-grow: 1;
+}
+
+.animation-buttons button {
+  margin-right: 5px;
+  margin-bottom: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #eee;
+  border-radius: 3px;
+}
+
+.animation-buttons button:hover {
+  background-color: #ddd;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}

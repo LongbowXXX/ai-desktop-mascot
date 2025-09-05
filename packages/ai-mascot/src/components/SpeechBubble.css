@@ -1,0 +1,37 @@
+/*
+Optional container styling if needed
+.speech-bubble-container {
+}
+ */
+
+.speech-bubble {
+  background-color: rgba(255, 255, 255, 0.8);
+  color: #333;
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  max-width: 150px; /* Adjust as needed */
+  min-width: 120px; /* Adjust as needed */
+  word-wrap: break-word; /* Wrap long words */
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  position: relative; /* Needed for the tail */
+  font-family: sans-serif;
+  font-size: 6px;
+}
+
+/* Optional: Add a tail to the bubble */
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px; /* Position the tail */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid rgba(255, 255, 255, 0.8); /* Match bubble background */
+  border-bottom: 0;
+  /* Add border matching bubble border if needed */
+  /* border-top-color: #ccc; */ /* Example if you want the tail border */
+}

@@ -1,0 +1,36 @@
+[
+  {
+    "id": "avatar1",
+    "vrmUrl": "/avatar/avatar.vrm",
+    "animationUrls": {
+      "idle": "/vrma/idle_pose.vrma",
+      "wave": "/vrma/wave_pose.vrma",
+      "agree": "/vrma/agree_pose.vrma",
+      "no": "/vrma/no_pose.vrma",
+      "fear": "/vrma/fear_pose.vrma",
+      "victory": "/vrma/victory_pose.vrma",
+      "punch": "/vrma/punch_pose.vrma"
+    },
+    "currentEmotion": "neutral",
+    "headYaw": 0,
+    "currentAnimationName": "idle",
+    "position": [-0.5, 0, 0]
+  },
+  {
+    "id": "avatar2",
+    "vrmUrl": "/avatar/avatar2.vrm",
+    "animationUrls": {
+      "idle": "/vrma/idle_pose.vrma",
+      "wave": "/vrma/wave_pose.vrma",
+      "agree": "/vrma/agree_pose.vrma",
+      "no": "/vrma/no_pose.vrma",
+      "fear": "/vrma/fear_pose.vrma",
+      "victory": "/vrma/victory_pose.vrma",
+      "punch": "/vrma/punch_pose.vrma"
+    },
+    "currentEmotion": "neutral",
+    "headYaw": 0,
+    "currentAnimationName": "idle",
+    "position": [0.5, 0, 0]
+  }
+]

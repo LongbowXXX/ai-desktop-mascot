@@ -1,0 +1,55 @@
+/* src/components/VRMController.css */
+.vrm-controller {
+  /* Remove absolute positioning */
+  background-color: rgba(40, 40, 40, 0.8);
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  /* Let App.css handle height/scrolling */
+  /* Add margin or rely on App.css for spacing */
+  margin-bottom: 15px; /* Add some space between controllers */
+}
+
+.vrm-controller:last-child {
+  margin-bottom: 0;
+}
+
+.vrm-controller h4 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid #555;
+  padding-bottom: 3px;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.control-row label {
+  min-width: 80px; /* ラベル幅を揃える */
+  margin-right: 10px;
+  font-size: 0.9em;
+}
+
+.control-row input[type='range'] {
+  flex-grow: 1;
+  cursor: pointer;
+}
+
+.animation-buttons button {
+  background-color: #61dafb;
+  border: none;
+  color: #282c34;
+  padding: 5px 10px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.animation-buttons button:hover {
+  background-color: #4fa8c4;
+}
