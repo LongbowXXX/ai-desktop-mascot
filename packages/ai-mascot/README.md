@@ -10,10 +10,10 @@ AI V-Tuber システムのフロントエンドであり、VRM モデルの描�
 
 メインの [アーキテクチャドキュメント](../../docs/architecture.md) で説明されているように、`ai-mascot` は以下の役割を担います:
 
-1.  VRM モデルの読み込みとレンダリング。
-2.  `stage-director` からの WebSocket コマンドを受信し、キャラクターの表情、ポーズ、視線をリアルタイムで更新。
-3.  OBS Studio との連携 (`obs-websocket-js`) により、シーン切り替えやソース表示/非表示を制御。
-4.  (オプション) TTS (Text-to-Speech) を使用した音声合成とリップシンク。
+1. VRM モデルの読み込みとレンダリング。
+2. `stage-director` からの WebSocket コマンドを受信し、キャラクターの表情、ポーズ、視線をリアルタイムで更新。
+3. OBS Studio との連携 (`obs-websocket-js`) により、シーン切り替えやソース表示/非表示を制御。
+4. (オプション) TTS (Text-to-Speech) を使用した音声合成とリップシンク。
 
 ## 機能
 

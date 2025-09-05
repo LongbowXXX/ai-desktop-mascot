@@ -44,7 +44,7 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
   );
   const currentAction = useRef<THREE.AnimationAction | null>(null);
   const [bubbleText, setBubbleText] = useState<SpeakMessage | null>(null);
-  const animationTimeoutRef = useRef<number | null>(null); // 3秒タイマー用ref: number型に修正
+  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isTtsSpeaking, setIsTtsSpeaking] = useState(false);
 
