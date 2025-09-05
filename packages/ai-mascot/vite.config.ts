@@ -17,8 +17,16 @@ export default defineConfig({
         input: path.join(__dirname, 'electron/preload.ts'),
       },
       // Ployfill the Electron and Node.js built-in modules for Renderer process.
-      // See 👉 https://github.com/electron-vite/vite-plugin-electron-renderer
+      // See 9 https://github.com/electron-vite/vite-plugin-electron-renderer
       renderer: {},
     }),
   ],
+  esbuild: {
+    tsconfigRaw: {
+      compilerOptions: {
+        experimentalDecorators: true,
+        useDefineForClassFields: false,
+      },
+    },
+  },
 });
