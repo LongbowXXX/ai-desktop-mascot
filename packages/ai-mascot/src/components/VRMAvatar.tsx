@@ -1,5 +1,5 @@
 // src/components/VRMAvatar.tsx
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo, useLayoutEffect } from 'react';
 import { ThreeEvent, useFrame } from '@react-three/fiber';
 import { VRM } from '@pixiv/three-vrm';
 import * as THREE from 'three';
@@ -11,6 +11,70 @@ import { useFacialExpression } from '../hooks/useFacialExpression';
 
 // --- Constants ---
 const ANIMATION_FADE_DURATION = 0.3;
+const AVATAR_APPEAR_DELAY = 1.0;
+
+type MaterialBaseState = {
+  opacity: number;
+  transparent: boolean;
+  depthWrite: boolean;
+};
+
+const captureMaterialBaseState = (root: THREE.Object3D, baseStateMap: WeakMap<THREE.Material, MaterialBaseState>) => {
+  root.traverse(object => {
+    if ((object as THREE.Mesh).isMesh) {
+      const mesh = object as THREE.Mesh;
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.forEach(material => {
+        if (!material || baseStateMap.has(material)) {
+          return;
+        }
+        baseStateMap.set(material, {
+          opacity: material.opacity,
+          transparent: material.transparent,
+          depthWrite: material.depthWrite,
+        });
+      });
+    }
+  });
+};
+
+const applySceneOpacity = (
+  root: THREE.Object3D,
+  opacity: number,
+  baseStateMap: WeakMap<THREE.Material, MaterialBaseState>
+) => {
+  const clampedOpacity = THREE.MathUtils.clamp(opacity, 0, 1);
+  root.traverse(object => {
+    if ((object as THREE.Mesh).isMesh) {
+      const mesh = object as THREE.Mesh;
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      materials.forEach(material => {
+        if (!material) {
+          return;
+        }
+        let baseState = baseStateMap.get(material);
+        if (!baseState) {
+          baseState = {
+            opacity: material.opacity,
+            transparent: material.transparent,
+            depthWrite: material.depthWrite,
+          };
+          baseStateMap.set(material, baseState);
+        }
+
+        if (clampedOpacity >= 1) {
+          material.opacity = baseState.opacity;
+          material.transparent = baseState.transparent;
+          material.depthWrite = baseState.depthWrite;
+        } else {
+          material.opacity = baseState.opacity * clampedOpacity;
+          material.transparent = true;
+          material.depthWrite = false;
+        }
+      });
+    }
+  });
+};
 
 export interface VRMAvatarProps {
   id: string;
@@ -49,6 +113,11 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
   const currentAction = useRef<THREE.AnimationAction | null>(null);
   const [bubbleText, setBubbleText] = useState<SpeakMessage | null>(null);
   const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const materialBaseStateRef = useRef<WeakMap<THREE.Material, MaterialBaseState>>(new WeakMap());
+  const fadeStateRef = useRef<{ elapsed: number; active: boolean }>({
+    elapsed: 0,
+    active: false,
+  });
 
   const [isTtsSpeaking, setIsTtsSpeaking] = useState(false);
 
@@ -170,6 +239,15 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
 
   const { updateExpressions } = useFacialExpression(isLoaded ? vrmRef.current : null, current_emotion, isTtsSpeaking);
 
+  useLayoutEffect(() => {
+    if (isLoaded && gltf?.scene) {
+      materialBaseStateRef.current = new WeakMap();
+      captureMaterialBaseState(gltf.scene, materialBaseStateRef.current);
+      fadeStateRef.current = { elapsed: 0, active: true };
+      applySceneOpacity(gltf.scene, 0, materialBaseStateRef.current);
+    }
+  }, [gltf, isLoaded]);
+
   // --- Frame Update ---
   useFrame((_state, delta) => {
     const vrm = vrmRef.current;
@@ -178,6 +256,15 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
       mixer.current?.update(delta); // Update animation mixer
       vrm.update(delta); // Update VRM internal state (expressions, lookAt, physics)
     } // <-- Added missing closing brace
+
+    const fadeState = fadeStateRef.current;
+    if (fadeState.active && gltf?.scene) {
+      fadeState.elapsed += delta;
+      if (fadeState.elapsed >= AVATAR_APPEAR_DELAY) {
+        applySceneOpacity(gltf.scene, 1, materialBaseStateRef.current);
+        fadeState.active = false;
+      }
+    }
   });
 
   // TTS再生関数（onPlayコールバック対応）
