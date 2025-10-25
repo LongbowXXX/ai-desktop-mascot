@@ -59,22 +59,6 @@ const LastMessagePaper = styled.div`
   border-radius: 4px;
 `;
 
-const LoadingOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 10;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #333;
-`;
-
 const MarkdownOverlay = styled.div`
   position: absolute;
   bottom: 2%;
@@ -151,8 +135,6 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
   // 全員ロード完了でカメラアニメーション開始
   const allLoaded = avatars.length > 0 && loadedAvatarIds.length === avatars.length;
   const isAvatarHovered = hoveredAvatarIds.length > 0;
-  const showLoadingOverlay = !allLoaded || !hasStarted || !startCameraAnimation;
-
   const setWindowClickThrough = React.useCallback((ignore: boolean) => {
     if (typeof window === 'undefined') {
       return;
@@ -251,8 +233,6 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{stage.currentMarkdownText}</ReactMarkdown>
           </MarkdownOverlay>
         )}
-        {/* ローディングオーバーレイ or Startボタン */}
-        {showLoadingOverlay && <LoadingOverlay>Loading...</LoadingOverlay>}
       </CanvasArea>
       {/* Controller/Sidebar Area */}
       {import.meta.env.VITE_DEBUG_SIDEBAR === 'true' && (
