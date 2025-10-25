@@ -124,12 +124,13 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
   const [cameraAnimated, setCameraAnimated] = React.useState(false);
   // カメラアニメーション開始トリガー
   const [startCameraAnimation, setStartCameraAnimation] = React.useState(false);
-  // Startボタンを押したかどうか
-  const [started, setStarted] = React.useState(false);
+  // カメラアニメーション開始済みかどうか
+  const [hasStarted, setHasStarted] = React.useState(false);
   // 各アバターのロード完了IDを管理
   const [loadedAvatarIds, setLoadedAvatarIds] = React.useState<string[]>([]);
   // ホバー中のアバターIDを管理
   const [hoveredAvatarIds, setHoveredAvatarIds] = React.useState<string[]>([]);
+  const startDelayRef = React.useRef<number | null>(null);
 
   // アバターのonLoadコールバック
   const handleAvatarLoad = React.useCallback((id: string) => {
@@ -150,6 +151,7 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
   // 全員ロード完了でカメラアニメーション開始
   const allLoaded = avatars.length > 0 && loadedAvatarIds.length === avatars.length;
   const isAvatarHovered = hoveredAvatarIds.length > 0;
+  const showLoadingOverlay = !allLoaded || !hasStarted || !startCameraAnimation;
 
   const setWindowClickThrough = React.useCallback((ignore: boolean) => {
     if (typeof window === 'undefined') {
@@ -166,27 +168,55 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
     }
   }, []);
 
+  // ロード完了後に自動でステージ開始
+  React.useEffect(() => {
+    if (!allLoaded) {
+      if (startDelayRef.current !== null) {
+        clearTimeout(startDelayRef.current);
+        startDelayRef.current = null;
+      }
+      setHasStarted(false);
+      return;
+    }
+
+    if (hasStarted || startDelayRef.current !== null) {
+      return;
+    }
+
+    startDelayRef.current = window.setTimeout(() => {
+      setHasStarted(true);
+      startDelayRef.current = null;
+    }, 1000);
+
+    return () => {
+      if (startDelayRef.current !== null) {
+        clearTimeout(startDelayRef.current);
+        startDelayRef.current = null;
+      }
+    };
+  }, [allLoaded, hasStarted]);
+
   // 全員ロード完了でカメラアニメーション開始（ディレイ付き）
   React.useEffect(() => {
-    if (allLoaded && started && !startCameraAnimation && !cameraAnimated) {
+    if (allLoaded && hasStarted && !startCameraAnimation && !cameraAnimated) {
       setStartCameraAnimation(true);
     }
-    // allLoadedやstartedがfalseになったらリセット
-    if (!allLoaded || !started) {
+    // allLoadedやhasStartedがfalseになったらリセット
+    if (!allLoaded || !hasStarted) {
       setStartCameraAnimation(false);
     }
-  }, [allLoaded, started, startCameraAnimation, cameraAnimated]);
+  }, [allLoaded, hasStarted, startCameraAnimation, cameraAnimated]);
 
   // キャラクタ以外は透過クリックにする
   React.useEffect(() => {
     // Start 前はウィンドウ操作できるよう必ず解除
-    if (!started) {
+    if (!hasStarted) {
       setWindowClickThrough(false);
       return;
     }
     // ホバー中が無いときのみ透過にする
     setWindowClickThrough(!isAvatarHovered);
-  }, [isAvatarHovered, setWindowClickThrough, started]);
+  }, [isAvatarHovered, setWindowClickThrough, hasStarted]);
 
   React.useEffect(() => {
     // アンマウント時は常に通常状態へ戻す
@@ -222,27 +252,7 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
           </MarkdownOverlay>
         )}
         {/* ローディングオーバーレイ or Startボタン */}
-        {!allLoaded && <LoadingOverlay>Loading...</LoadingOverlay>}
-        {allLoaded && !started && (
-          <LoadingOverlay>
-            <button
-              style={{
-                fontSize: '2rem',
-                padding: '1em 2em',
-                borderRadius: '8px',
-                border: 'none',
-                background: '#1976d2',
-                color: '#fff',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              }}
-              onClick={() => setStarted(true)}
-            >
-              Start
-            </button>
-          </LoadingOverlay>
-        )}
+        {showLoadingOverlay && <LoadingOverlay>Loading...</LoadingOverlay>}
       </CanvasArea>
       {/* Controller/Sidebar Area */}
       {import.meta.env.VITE_DEBUG_SIDEBAR === 'true' && (
