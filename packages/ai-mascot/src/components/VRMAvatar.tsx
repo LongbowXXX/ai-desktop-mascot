@@ -1,6 +1,6 @@
 // src/components/VRMAvatar.tsx
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { ThreeEvent, useFrame } from '@react-three/fiber';
 import { VRM } from '@pixiv/three-vrm';
 import * as THREE from 'three';
 import { SpeechBubble } from './SpeechBubble'; // Import the SpeechBubble component
@@ -23,6 +23,8 @@ export interface VRMAvatarProps {
   onLoad?: (vrm: VRM) => void;
   onTTSComplete?: (speakId: string) => void;
   onAnimationEnd?: (animationName: string) => void;
+  onPointerOverAvatar?: () => void;
+  onPointerOutAvatar?: () => void;
 }
 
 export const VRMAvatar: React.FC<VRMAvatarProps> = ({
@@ -36,6 +38,8 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
   onLoad,
   onTTSComplete,
   onAnimationEnd,
+  onPointerOverAvatar,
+  onPointerOutAvatar,
 }) => {
   const { gltf, vrmRef, mixer, isLoaded, loadedAnimationNames, createAnimationClipFromVRMA } = useVrmModel(
     vrmUrl,
@@ -205,10 +209,41 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
   }, [speechText, playTTS, onTTSComplete, id]);
 
   // Render only when VRM is loaded, applying the position
+  const handlePointerOver = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      event.stopPropagation();
+      onPointerOverAvatar?.();
+    },
+    [onPointerOverAvatar]
+  );
+
+  const handlePointerOut = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      event.stopPropagation();
+      onPointerOutAvatar?.();
+    },
+    [onPointerOutAvatar]
+  );
+
+  const hitboxPosition = useMemo<[number, number, number]>(() => [0, 0.9, 0], []);
+  const hitboxScale = useMemo<[number, number, number]>(() => [0.7, 1.8, 0.6], []);
+
   return isLoaded && vrmRef.current ? (
-    <primitive object={gltf.scene} position={position} dispose={null}>
+    <group position={position}>
+      {/* 実際の VRM モデル。ヒットテストは行わず描画専用にする */}
+      <primitive object={gltf.scene} dispose={null} />
+      <mesh
+        position={hitboxPosition}
+        scale={hitboxScale}
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
+      >
+        {/* 透明な直方体でシンプルな当たり判定を代用し、ゴチャゴチャしたメッシュへの raycast を避ける */}
+        <boxGeometry args={[1, 1, 1]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} depthTest={false} />
+      </mesh>
       {/* Add SpeechBubble as a child, positioned relative to the avatar */}
       {bubbleText && <SpeechBubble message={bubbleText} />}
-    </primitive>
+    </group>
   ) : null;
 };

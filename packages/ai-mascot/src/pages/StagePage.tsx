@@ -11,6 +11,7 @@ import { AvatarState } from '../types/avatar_types';
 import { StageState } from '../types/scene_types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { ElectronWindow } from '../types/electron';
 
 interface StagePageProps {
   avatars: AvatarState[];
@@ -24,11 +25,13 @@ interface StagePageProps {
 const Root = styled.div`
   display: flex;
   height: 100vh;
+  background: transparent;
 `;
 
 const CanvasArea = styled.div`
   flex-grow: 1;
   position: relative;
+  background: transparent;
 `;
 
 const Sidebar = styled.div`
@@ -65,7 +68,7 @@ const LoadingOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 1);
+  background: rgba(255, 255, 255, 0.8);
   z-index: 10;
   font-size: 2rem;
   font-weight: bold;
@@ -97,7 +100,7 @@ const CameraInit: React.FC = () => {
   const { camera } = useThree();
   useEffect(() => {
     let frame = 0;
-    let raf: number;
+    let raf: number | undefined;
     const setCamera = () => {
       camera.position.set(0, 5, 10);
       camera.lookAt(0, 1, 0);
@@ -125,14 +128,43 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
   const [started, setStarted] = React.useState(false);
   // 各アバターのロード完了IDを管理
   const [loadedAvatarIds, setLoadedAvatarIds] = React.useState<string[]>([]);
+  // ホバー中のアバターIDを管理
+  const [hoveredAvatarIds, setHoveredAvatarIds] = React.useState<string[]>([]);
 
   // アバターのonLoadコールバック
   const handleAvatarLoad = React.useCallback((id: string) => {
     setLoadedAvatarIds(prev => (prev.includes(id) ? prev : [...prev, id]));
   }, []);
 
+  // アバターのホバー状態変更
+  const handleAvatarPointerOver = React.useCallback((id: string) => {
+    // ホバー中のIDを追加。既に追加済みなら何もしない
+    setHoveredAvatarIds(prev => (prev.includes(id) ? prev : [...prev, id]));
+  }, []);
+
+  const handleAvatarPointerOut = React.useCallback((id: string) => {
+    // ホバーが抜けたIDを除去
+    setHoveredAvatarIds(prev => prev.filter(existingId => existingId !== id));
+  }, []);
+
   // 全員ロード完了でカメラアニメーション開始
   const allLoaded = avatars.length > 0 && loadedAvatarIds.length === avatars.length;
+  const isAvatarHovered = hoveredAvatarIds.length > 0;
+
+  const setWindowClickThrough = React.useCallback((ignore: boolean) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const electronAPI = (window as ElectronWindow).electron;
+    if (electronAPI?.setWindowIgnoreMouseEvents) {
+      // ignore = true のとき forward を付けて hover 測位は維持する
+      if (ignore) {
+        electronAPI.setWindowIgnoreMouseEvents(true, { forward: true });
+      } else {
+        electronAPI.setWindowIgnoreMouseEvents(false);
+      }
+    }
+  }, []);
 
   // 全員ロード完了でカメラアニメーション開始（ディレイ付き）
   React.useEffect(() => {
@@ -144,6 +176,24 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
       setStartCameraAnimation(false);
     }
   }, [allLoaded, started, startCameraAnimation, cameraAnimated]);
+
+  // キャラクタ以外は透過クリックにする
+  React.useEffect(() => {
+    // Start 前はウィンドウ操作できるよう必ず解除
+    if (!started) {
+      setWindowClickThrough(false);
+      return;
+    }
+    // ホバー中が無いときのみ透過にする
+    setWindowClickThrough(!isAvatarHovered);
+  }, [isAvatarHovered, setWindowClickThrough, started]);
+
+  React.useEffect(() => {
+    // アンマウント時は常に通常状態へ戻す
+    return () => {
+      setWindowClickThrough(false);
+    };
+  }, [setWindowClickThrough]);
 
   return (
     <Root>
@@ -157,7 +207,13 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
             active={allLoaded && startCameraAnimation && !cameraAnimated}
             onFinish={() => setCameraAnimated(true)}
           />
-          <SceneContent avatars={avatars} controlsEnabled={cameraAnimated} onAvatarLoad={handleAvatarLoad} />
+          <SceneContent
+            avatars={avatars}
+            controlsEnabled={cameraAnimated}
+            onAvatarLoad={handleAvatarLoad}
+            onAvatarPointerOver={handleAvatarPointerOver}
+            onAvatarPointerOut={handleAvatarPointerOut}
+          />
         </Canvas>
         {/* Markdown Overlay */}
         {stage.currentMarkdownText && (

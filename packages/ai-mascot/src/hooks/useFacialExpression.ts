@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 const LIPSYNC_MOUTH_LIST: VRMExpressionPresetName[] = ['aa', 'ih', 'ou', 'ee', 'oh'];
 
 export function useFacialExpression(vrm: VRM | null, currentEmotion: string, isVoiceActive: boolean) {
-  const intervalRef = useRef<number | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idxRef = useRef(0);
   const [expressionWeights, setExpressionWeights] = useState<Record<string, number>>({});
 

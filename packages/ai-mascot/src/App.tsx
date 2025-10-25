@@ -5,6 +5,23 @@ import StagePage from './pages/StagePage';
 const lightTheme = createTheme({
   palette: {
     mode: 'light',
+    background: {
+      default: 'rgba(0, 0, 0, 0)',
+      paper: 'rgba(0, 0, 0, 0)',
+    },
+    text: {
+      primary: '#ffffff',
+    },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: 'transparent',
+          backgroundImage: 'none',
+        },
+      },
+    },
   },
 });
 
