@@ -17,6 +17,8 @@ process.env.DIST = path.join(__dirname, '../dist');
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public');
 
 let win: BrowserWindow | null;
+// ウィンドウ位置のキャッシュ
+let cachedWindowPosition: { x: number; y: number } | null = null;
 // 🚧 Use ['ENV_NAME'] avoid vite:define plugin - Vite@2.x
 const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL'];
 
@@ -41,7 +43,7 @@ function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC!, 'electron-vite.svg'),
     width: 800,
-    height: 600,
+    height: 1080,
     transparent: true,
     frame: false,
     backgroundColor: '#00000000',
@@ -54,6 +56,10 @@ function createWindow() {
 
   win.setBackgroundColor('#00000000');
   win.setAlwaysOnTop(true, 'screen-saver');
+
+  // 初期ウィンドウ位置をキャッシュ
+  const [x, y] = win.getPosition();
+  cachedWindowPosition = { x, y };
 
   win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
     const levelName = consoleLevelMap[level] ?? 'log';
@@ -89,6 +95,43 @@ ipcMain.handle('window:set-ignore-mouse-events', (_event, payload: IgnoreMouseEv
   win.setIgnoreMouseEvents(ignore, finalOptions);
 });
 
+type MoveWindowPayload = {
+  deltaX: number;
+  deltaY: number;
+};
+
+ipcMain.handle('window:move', (_event, payload: MoveWindowPayload) => {
+  if (!win) {
+    return;
+  }
+  // Validate payload
+  if (typeof payload !== 'object' || payload === null) {
+    console.error('Invalid payload for window:move', payload);
+    return;
+  }
+  const deltaX = Number(payload.deltaX);
+  const deltaY = Number(payload.deltaY);
+  if (isNaN(deltaX) || isNaN(deltaY)) {
+    console.error('Invalid delta values', payload);
+    return;
+  }
+
+  // キャッシュされた位置がない場合は現在位置を取得
+  if (!cachedWindowPosition) {
+    const [x, y] = win.getPosition();
+    cachedWindowPosition = { x, y };
+  }
+
+  // キャッシュされた位置を更新
+  const newX = Math.round(cachedWindowPosition.x + deltaX);
+  const newY = Math.round(cachedWindowPosition.y + deltaY);
+
+  cachedWindowPosition = { x: newX, y: newY };
+
+  // ウィンドウ位置を設定
+  win.setPosition(newX, newY);
+});
+
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
@@ -96,6 +139,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
     win = null;
+    cachedWindowPosition = null;
   }
 });
 

@@ -8,6 +8,7 @@ import { playVoice } from '../services/tts_service';
 import { useVrmModel } from '../hooks/useVrmModel';
 import { SpeakMessage } from '../types/avatar_types';
 import { useFacialExpression } from '../hooks/useFacialExpression';
+import { ElectronWindow } from '../types/electron';
 
 // --- Constants ---
 const ANIMATION_FADE_DURATION = 0.3;
@@ -267,7 +268,7 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
     }
   });
 
-  // TTS再生関数（onPlayコールバック対応）
+  // TTS再生関数(onPlayコールバック対応)
   const playTTS = useCallback(
     async (text: string, onPlay?: () => void) => {
       console.log('[TTS] playTTS called with text:', text);
@@ -275,6 +276,126 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
     },
     [id]
   );
+
+  // ドラッグ開始
+  const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+
+    const windowWithDrag = window as Window & {
+      __vrmDragState?: {
+        isDragging: boolean;
+        lastX: number;
+        lastY: number;
+        pendingDelta: { deltaX: number; deltaY: number } | null;
+        rafId: number | null;
+      };
+    };
+
+    // 既にドラッグ中なら無視
+    if (windowWithDrag.__vrmDragState?.isDragging) return;
+
+    // グローバルなドラッグ状態を初期化
+    if (!windowWithDrag.__vrmDragState) {
+      windowWithDrag.__vrmDragState = {
+        isDragging: false,
+        lastX: 0,
+        lastY: 0,
+        pendingDelta: null,
+        rafId: null,
+      };
+    }
+
+    windowWithDrag.__vrmDragState.isDragging = true;
+    windowWithDrag.__vrmDragState.lastX = event.screenX;
+    windowWithDrag.__vrmDragState.lastY = event.screenY;
+  }, []);
+
+  // ドラッグ中 - useEffectでグローバルイベントを監視（コンポーネントがマウントされている間だけ）
+  useEffect(() => {
+    // 既にイベントリスナーが登録されている場合はスキップ
+    const windowWithFlag = window as Window & {
+      __vrmDragHandlerInstalled?: boolean;
+      __vrmDragState?: {
+        isDragging: boolean;
+        lastX: number;
+        lastY: number;
+        pendingDelta: { deltaX: number; deltaY: number } | null;
+        rafId: number | null;
+      };
+    };
+
+    if (windowWithFlag.__vrmDragHandlerInstalled) {
+      return;
+    }
+
+    windowWithFlag.__vrmDragHandlerInstalled = true;
+    const electronAPI = (window as ElectronWindow).electron;
+
+    const applyPendingMove = () => {
+      const dragState = windowWithFlag.__vrmDragState;
+      if (dragState?.pendingDelta && electronAPI?.moveWindow) {
+        electronAPI.moveWindow(dragState.pendingDelta.deltaX, dragState.pendingDelta.deltaY);
+        dragState.pendingDelta = null;
+      }
+      if (dragState) {
+        dragState.rafId = null;
+      }
+    };
+
+    const handleGlobalPointerMove = (event: PointerEvent) => {
+      const dragState = windowWithFlag.__vrmDragState;
+      if (!dragState?.isDragging) return;
+
+      const deltaX = Math.round(event.screenX - dragState.lastX);
+      const deltaY = Math.round(event.screenY - dragState.lastY);
+
+      // 移動量がある場合のみ更新
+      if (deltaX !== 0 || deltaY !== 0) {
+        // lastPositionも実際に使用されたdelta分だけ更新（整数化後の値で更新）
+        dragState.lastX += deltaX;
+        dragState.lastY += deltaY;
+
+        // 累積デルタを保存
+        if (dragState.pendingDelta) {
+          dragState.pendingDelta.deltaX += deltaX;
+          dragState.pendingDelta.deltaY += deltaY;
+        } else {
+          dragState.pendingDelta = { deltaX, deltaY };
+        }
+
+        // requestAnimationFrameでスロットリング
+        if (dragState.rafId === null) {
+          dragState.rafId = requestAnimationFrame(applyPendingMove);
+        }
+      }
+    };
+
+    const handleGlobalPointerUp = () => {
+      const dragState = windowWithFlag.__vrmDragState;
+      if (!dragState) return;
+
+      dragState.isDragging = false;
+      // 残りの移動を適用
+      if (dragState.rafId !== null) {
+        cancelAnimationFrame(dragState.rafId);
+        applyPendingMove();
+      }
+    };
+
+    // 常にイベントリスナーを登録
+    window.addEventListener('pointermove', handleGlobalPointerMove);
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      const dragState = windowWithFlag.__vrmDragState;
+      if (dragState?.rafId !== null && dragState?.rafId !== undefined) {
+        cancelAnimationFrame(dragState.rafId);
+      }
+      delete windowWithFlag.__vrmDragHandlerInstalled;
+    };
+  }, []);
 
   // speechTextが変化したらTTS再生→終了後に吹き出しを閉じる
   useEffect(() => {
@@ -324,6 +445,7 @@ export const VRMAvatar: React.FC<VRMAvatarProps> = ({
         scale={hitboxScale}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
+        onPointerDown={handlePointerDown}
       >
         {/* 透明な直方体でシンプルな当たり判定を代用し、ゴチャゴチャしたメッシュへの raycast を避ける */}
         <boxGeometry args={[1, 1, 1]} />

@@ -221,7 +221,7 @@ const StagePage: React.FC<StagePageProps> = ({ avatars, setAvatars, stage, lastM
           />
           <SceneContent
             avatars={avatars}
-            controlsEnabled={cameraAnimated}
+            controlsEnabled={false}
             onAvatarLoad={handleAvatarLoad}
             onAvatarPointerOver={handleAvatarPointerOver}
             onAvatarPointerOut={handleAvatarPointerOut}

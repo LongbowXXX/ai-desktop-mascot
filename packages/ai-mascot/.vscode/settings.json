@@ -1,0 +1,13 @@
+{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.renderControlCharacters": true,
+  "window.title": "[${rootName}]${separator}${dirty}${activeEditorShort}${separator}${profileName}${separator}${appName}",
+  "github.copilot.advanced": {},
+  "github.copilot.chat.commitMessageGeneration.instructions": [
+    {
+      "text": "コミットメッセージは英語で生成してください。"
+    }
+  ],
+  "github.copilot.chat.localeOverride": "ja"
+}
