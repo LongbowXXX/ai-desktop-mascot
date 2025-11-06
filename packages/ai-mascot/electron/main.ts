@@ -42,7 +42,7 @@ const consoleLevelMap: Record<number, 'log' | 'info' | 'warn' | 'error'> = {
 function createWindow() {
   win = new BrowserWindow({
     icon: path.join(process.env.VITE_PUBLIC!, 'electron-vite.svg'),
-    width: 800,
+    width: 1280,
     height: 1080,
     transparent: true,
     frame: false,
